@@ -1,3 +1,4 @@
+#![allow(clippy::or_fun_call)]
 use phf::{phf_map, Map};
 use std::{fs::File, io::Write};
 
@@ -16,16 +17,16 @@ static DARKNESS_MAP: Map<u8, char> = phf_map! {
 };
 fn main() {
     let mut output_string = String::new();
-    let initial_image = open_file(input("File name: ").unwrap().trim()).unwrap();
+    let initial_image = open_file_safe(input("File name: ").unwrap().trim());
     let (w, h) = initial_image.dimensions();
-    let split_h = input("Image height step: ")
-        .unwrap_or_else(|j| "16".to_string())
+    let split_h = input("Image height step (default 16): ")
+        .unwrap_or("16".to_string())
         .parse::<u32>()
-        .unwrap();
-    let split_w = input("Image height step: ")
+        .unwrap_or(16);
+    let split_w = input("Image width step (default 8): ")
         .unwrap_or("8".to_string())
         .parse::<u32>()
-        .unwrap();
+        .unwrap_or(8);
     pixel_each(h, w, initial_image, &mut output_string, split_w, split_h);
     let mut b = File::create("output.txt").unwrap();
     b.write_all(output_string.as_bytes()).unwrap();
@@ -64,5 +65,25 @@ fn get_char(i: u8) -> char {
     DARKNESS_MAP[&(9 - (i as f64 / 256.0 * 10.0) as u8)]
 }
 fn open_file(p: &str) -> Result<ImageBuffer<Luma<u8>, Vec<u8>>, Box<dyn std::error::Error>> {
-    Ok(open(p)?.into_luma8())
+    let b = open(p)?.into_luma8();
+    Ok(b)
+}
+
+fn open_file_safe(p: &str) -> ImageBuffer<Luma<u8>, Vec<u8>> {
+    if !p.contains(".png") && !p.contains(".jpg") {
+        return open_file_safe(
+            &input("The only supported file types are .png and .jpg! Please enter a valid file:")
+                .unwrap()
+                .trim(),
+        );
+    }
+    let b = open_file(p);
+    match b {
+        Err(_) => open_file_safe(
+            &input("An error occurred, please enter again (maybe the file wasn't found?):")
+                .unwrap()
+                .trim(),
+        ),
+        Ok(s) => s,
+    }
 }

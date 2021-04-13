@@ -36,10 +36,12 @@ fn prepare_image_details(initial_image: &ImageBuffer<Luma<u8>, Vec<u8>>) -> (u32
     let (w, h) = initial_image.dimensions();
     let split_h = input("Image height step (default 16): ")
         .unwrap_or("16".to_string())
+        .trim()
         .parse::<u32>()
         .unwrap_or(16);
     let split_w = input("Image width step (default 8): ")
         .unwrap_or("8".to_string())
+        .trim()
         .parse::<u32>()
         .unwrap_or(8);
     (w, h, split_h, split_w)
@@ -65,8 +67,8 @@ fn pixel_each(
     split_w: u32,
     split_h: u32,
 ) {
-    for q in 0..h / split_h as u32 {
-        for i in 0..w / split_w as u32 {
+    for q in 0..(h / split_h as u32) {
+        for i in 0..(w / split_w as u32) {
             let mut temp_vec = vec![];
             for a in i * split_w..(i + 1) * split_w {
                 for b in q * split_h..(q + 1) * split_h {
@@ -93,35 +95,6 @@ fn open_file(p: &str) -> Result<ImageBuffer<Luma<u8>, Vec<u8>>, Box<dyn std::err
     let b = open(p)?.into_luma8();
     Ok(b)
 }
-/*
-fn open_file_safe(p: &str) -> ImageBuffer<Luma<u8>, Vec<u8>> {
-    if !p.contains(".png") && !p.contains(".jpg") {
-        return open_file_safe(
-            &input("The only supported file types are .png and .jpg! Please enter a valid file:")
-                .unwrap()
-                .trim(),
-        );
-    }
-    let b = open_file(p);
-    match b {
-        Err(_) => open_file_safe(
-            &input("An error occurred, please enter again (maybe the file wasn't found?):")
-                .unwrap()
-                .trim(),
-        ),
-        Ok(s) => s,
-    }
-}
-// Implement light/dark mode so that it is not inverted.
-
-fn l_d_input(s: &str) -> String {
-    match input(s) {
-        Ok(f) => f,
-        Err(_) => l_d_input("That is not valid!"),
-    }
-}
-fn p_l_d_input(s: String) -> bool {}
-*/
 fn file_map() -> HashMap<usize, String> {
     let b = fs::read_dir("./").unwrap();
     let mut x = 1;

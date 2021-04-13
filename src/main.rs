@@ -14,13 +14,19 @@ static DARKNESS_MAP: Map<u8, char> = phf_map! {
     8u8 => '%',
     9u8 => '@',
 };
-const SPLITW: u32 = 8;
-const SPLITH: u32 = 16;
 fn main() {
     let mut output_string = String::new();
     let initial_image = open_file(input("File name: ").unwrap().trim()).unwrap();
     let (w, h) = initial_image.dimensions();
-    pixel_each(h, w, initial_image, &mut output_string);
+    let split_h = input("Image height step: ")
+        .unwrap_or_else(|j| "16".to_string())
+        .parse::<u32>()
+        .unwrap();
+    let split_w = input("Image height step: ")
+        .unwrap_or("8".to_string())
+        .parse::<u32>()
+        .unwrap();
+    pixel_each(h, w, initial_image, &mut output_string, split_w, split_h);
     let mut b = File::create("output.txt").unwrap();
     b.write_all(output_string.as_bytes()).unwrap();
 }
@@ -30,12 +36,14 @@ fn pixel_each(
     w: u32,
     initial_image: ImageBuffer<Luma<u8>, Vec<u8>>,
     output_string: &mut String,
+    split_w: u32,
+    split_h: u32,
 ) {
-    for q in 0..h / SPLITH as u32 {
-        for i in 0..w / SPLITW as u32 {
+    for q in 0..h / split_h as u32 {
+        for i in 0..w / split_w as u32 {
             let mut temp_vec = vec![];
-            for a in i * SPLITW..(i + 1) * SPLITW {
-                for b in q * SPLITH..(q + 1) * SPLITH {
+            for a in i * split_w..(i + 1) * split_w {
+                for b in q * split_h..(q + 1) * split_h {
                     temp_vec.push(initial_image.get_pixel(a, b).0[0]);
                 }
             }

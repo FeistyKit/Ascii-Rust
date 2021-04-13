@@ -1,6 +1,10 @@
 #![allow(clippy::or_fun_call)]
 use phf::{phf_map, Map};
-use std::{fs::File, io::Write};
+use std::{
+    collections::HashMap,
+    fs::{self, File},
+    io::Write,
+};
 
 use image::{open, ImageBuffer, Luma};
 static DARKNESS_MAP: Map<u8, char> = phf_map! {
@@ -17,7 +21,18 @@ static DARKNESS_MAP: Map<u8, char> = phf_map! {
 };
 fn main() {
     let mut output_string = String::new();
-    let initial_image = open_file_safe(input("File name: ").unwrap().trim());
+    let (map, string_prompt) = prepare_map();
+    let initial_image = open_from_map(&map, &string_prompt);
+
+    let (w, h, split_h, split_w) = prepare_image_details(&initial_image);
+    pixel_each(h, w, initial_image, &mut output_string, split_w, split_h);
+    let mut b = File::create("output.txt").unwrap();
+    b.write_all(output_string.as_bytes()).unwrap();
+    println!("Finished!");
+    pause();
+}
+
+fn prepare_image_details(initial_image: &ImageBuffer<Luma<u8>, Vec<u8>>) -> (u32, u32, u32, u32) {
     let (w, h) = initial_image.dimensions();
     let split_h = input("Image height step (default 16): ")
         .unwrap_or("16".to_string())
@@ -27,9 +42,19 @@ fn main() {
         .unwrap_or("8".to_string())
         .parse::<u32>()
         .unwrap_or(8);
-    pixel_each(h, w, initial_image, &mut output_string, split_w, split_h);
-    let mut b = File::create("output.txt").unwrap();
-    b.write_all(output_string.as_bytes()).unwrap();
+    (w, h, split_h, split_w)
+}
+
+fn prepare_map() -> (HashMap<usize, String>, String) {
+    let map = file_map();
+    let mut string_prompt =
+        "Input the number that corresponds to the file that you want to convert: ".to_string();
+    let mut b: Vec<_> = map.iter().collect();
+    b.sort_by(|a, b| a.0.cmp(b.0));
+    for (k, v) in &b {
+        string_prompt.push_str(&format!("\n{}: {}", k, v));
+    }
+    (map, string_prompt)
 }
 
 fn pixel_each(
@@ -68,7 +93,7 @@ fn open_file(p: &str) -> Result<ImageBuffer<Luma<u8>, Vec<u8>>, Box<dyn std::err
     let b = open(p)?.into_luma8();
     Ok(b)
 }
-
+/*
 fn open_file_safe(p: &str) -> ImageBuffer<Luma<u8>, Vec<u8>> {
     if !p.contains(".png") && !p.contains(".jpg") {
         return open_file_safe(
@@ -86,4 +111,51 @@ fn open_file_safe(p: &str) -> ImageBuffer<Luma<u8>, Vec<u8>> {
         ),
         Ok(s) => s,
     }
+}
+// Implement light/dark mode so that it is not inverted.
+
+fn l_d_input(s: &str) -> String {
+    match input(s) {
+        Ok(f) => f,
+        Err(_) => l_d_input("That is not valid!"),
+    }
+}
+fn p_l_d_input(s: String) -> bool {}
+*/
+fn file_map() -> HashMap<usize, String> {
+    let b = fs::read_dir("./").unwrap();
+    let mut x = 1;
+    let mut map = HashMap::new();
+    for i in b {
+        let h = i.unwrap().file_name();
+        let q = h.to_str().unwrap();
+        if q.contains(".png") || q.contains(".jpg") {
+            map.insert(x, q.to_string());
+            x += 1;
+        }
+    }
+    map
+}
+fn open_from_map(
+    map: &HashMap<usize, String>,
+    string_prompt: &str,
+) -> ImageBuffer<Luma<u8>, Vec<u8>> {
+    match map.get(
+        &input(string_prompt)
+            .unwrap()
+            .trim()
+            .parse::<usize>()
+            .unwrap_or(0),
+    ) {
+        Some(s) => open_file(s).unwrap(),
+        None => open_from_map(map, "That is not a valid entry!"),
+    }
+}
+#[allow(unused_imports)]
+fn pause() {
+    use std::io::{stdin, stdout, Read, Write};
+    let mut stdout = stdout();
+    stdout.write_all(b"Press Enter to continue...").unwrap();
+    stdout.flush().unwrap();
+    stdin().read_exact(&mut [0]).unwrap();
 }

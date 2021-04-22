@@ -20,20 +20,18 @@ static DARKNESS_MAP: Map<u8, char> = phf_map! {
     9u8 => '@',
 };
 fn main() {
-    let mut output_string = String::new();
     let (map, string_prompt) = prepare_map();
     let initial_image = open_from_map(&map, &string_prompt);
-
     let details = prepare_image_details(&initial_image);
-    pixel_each(initial_image, &mut output_string, details);
+    let output_string = pixel_each(initial_image, details);
     save(output_string);
-    println!("Finished!");
     pause();
 }
 
 fn save(output_string: String) {
     let mut b = File::create("output.txt").unwrap();
     b.write_all(output_string.as_bytes()).unwrap();
+    println!("Finished!");
 }
 
 fn prepare_image_details(initial_image: &ImageBuffer<Luma<u8>, Vec<u8>>) -> ImageDetails {
@@ -67,11 +65,8 @@ fn prepare_map() -> (BTreeMap<usize, String>, String) {
 }
 
 //goes through pixels to determine the darkness of each
-fn pixel_each(
-    initial_image: ImageBuffer<Luma<u8>, Vec<u8>>,
-    output_string: &mut String,
-    details: ImageDetails,
-) {
+fn pixel_each(initial_image: ImageBuffer<Luma<u8>, Vec<u8>>, details: ImageDetails) -> String {
+    let mut output_string = String::new();
     for q in 0..(details.h / details.split_h as u32) {
         for i in 0..(details.w / details.split_w as u32) {
             //the image is split into "chunks" so that it can be scaled
@@ -88,6 +83,7 @@ fn pixel_each(
         }
         output_string.push('\n');
     }
+    output_string
 }
 fn input(m: &str) -> Result<String, std::io::Error> {
     println!("{}", m);

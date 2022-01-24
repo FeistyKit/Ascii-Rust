@@ -4,10 +4,10 @@ use clap::Parser;
 use phf::{phf_map, Map};
 use std::{
     fs::File,
-    io::Write, error::Error,
+    io::{Write, BufReader}, error::Error,
 };
 
-use image::{open, ImageBuffer, Luma};
+use image::{ImageBuffer, Luma, io::Reader};
 
 #[derive(Parser)]
 #[clap(
@@ -34,7 +34,11 @@ struct Args {
 
     #[clap(short, long, default_value = "output.txt")]
     /// The filepath to output to.
-    output_filepath: String
+    output_filepath: String,
+
+    #[clap(short, long)]
+    /// Whether or not to use a dark-mode colour scheme.
+    dark_mode: bool,
 }
 
 static DARKNESS_MAP: Map<u8, char> = phf_map! {
@@ -74,6 +78,7 @@ fn prepare_image_details(initial_image: &ImageBuffer<Luma<u8>, Vec<u8>>, args: &
         h,
         split_w: args.width_compression,
         split_h: args.height_compression,
+        dark: args.dark_mode,
     }
 }
 
@@ -92,20 +97,24 @@ fn pixel_each(initial_image: ImageBuffer<Luma<u8>, Vec<u8>>, details: ImageDetai
             let total: u64 = temp_vec.iter().map(|f| *f as u64).sum();
             let count: u64 = temp_vec.len() as u64;
             //gets average darkness of the vector
-            output_string.push(get_char((total / count) as u8));
+            output_string.push(get_char((total / count) as u8, details.dark));
         }
         output_string.push('\n');
     }
     output_string
 }
 //gets char from the map depending on darkness value. the math is so that the value can be changed to 10 options.
-fn get_char(i: u8) -> char {
-    //For users who use a light background; will add an option to switch depending on text viewer.
-    DARKNESS_MAP[&(9 - (i as f64 / 256.0 * 10.0) as u8)]
+fn get_char(i: u8, dark: bool) -> char {
+    //For users who use a light background
+    match dark {
+        true => DARKNESS_MAP[&((i as f64 / 256.0 * 10.0) as u8)],
+        false => DARKNESS_MAP[&(9 - (i as f64 / 256.0 * 10.0) as u8)],
+    }
+
 }
 
 fn open_file(p: &str) -> Result<ImageBuffer<Luma<u8>, Vec<u8>>, Box<dyn std::error::Error>> {
-    let b = open(p)?.into_luma8();
+    let b = Reader::new(BufReader::new(File::open(p)?)).with_guessed_format()?.decode()?.into_luma8();
     Ok(b)
 }
 
@@ -114,4 +123,5 @@ struct ImageDetails {
     h: u32,
     split_w: u32,
     split_h: u32,
+    dark: bool,
 }

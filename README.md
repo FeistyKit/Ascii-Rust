@@ -1,6 +1,14 @@
 ﻿# Ascii-Rust
 
-Put the executable in the same folder as whatever image you want to convert and run it. It will put the output in a file called output.txt. This program only works for .png and .jpg image files.
+A small program that I wrote to convert an image file to Ascii text.
+
+## Usage
+```bash
+$ git clone https://www.github.com/FeistyKit/ascii-rust
+$ cd ascii-rust
+$ cargo build --release
+$ target/release/ascii-ify ./socks.png -o socks.txt
+```
 
 # Example!
 

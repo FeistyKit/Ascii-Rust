@@ -3,8 +3,7 @@
 use clap::Parser;
 use phf::{phf_map, Map};
 use std::{
-    collections::BTreeMap,
-    fs::{self, File},
+    fs::File,
     io::Write, error::Error,
 };
 
@@ -18,14 +17,23 @@ use image::{open, ImageBuffer, Luma};
 struct Args {
 
     #[clap(short, long, default_value_t = 16)]
+    /// The amount of pixels packed into one character, width wise.
+    ///
+    /// Higher values mean that the image will be thinner. For most fonts,
+    /// results look best when this is about 0.5x width_compression.
     width_compression: u32,
 
     #[clap(short, long, default_value_t = 8)]
+    /// The amount of pixels packed into one character, height wise.
+    ///
+    /// Higher values mean that the image will be shorter. For most fonts,
+    /// results look best when this is about 2x width_compression.
     height_compression: u32,
 
     input_filepath: String,
 
     #[clap(short, long, default_value = "output.txt")]
+    /// The filepath to output to.
     output_filepath: String
 }
 

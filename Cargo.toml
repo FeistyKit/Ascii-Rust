@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 image = "*"
 phf = { version = "*", features = ["macros"] }
+clap = {version = "3.0.10", features = ["derive"]}
